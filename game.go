@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type GameInput struct {
 	Direction Direction
@@ -9,6 +12,11 @@ type GameInput struct {
 type Point struct {
 	X int
 	Y int
+}
+
+// func NewPoint(x, y int) Point {...}
+func P(x, y int) Point {
+	return Point{x, y}
 }
 
 type Direction int
@@ -60,11 +68,29 @@ func (snake Snake) Length() int {
 func (snake Snake) SetDirection(dir Direction) {
 	snake.Direction = dir
 }
+func (snake Snake) AppendToTail(dir Direction) {
+	snake.Tail = append([]Direction{dir}, snake.Tail...)
+}
+func (snake Snake) RemoveEndOfTail() {
+	if (len(snake.Tail)) > 0 {
+		snake.Tail = snake.Tail[:len(snake.Tail)-1]
+	}
+}
 
-func SnakeGame() {
+func (game GameState) RunGame() {
 	commandChannel := make(chan GameInput, 4)
+	moveDelay := time.Duration(1/game.Speed) * time.Millisecond
+	ticker := time.NewTicker(moveDelay)
+
+	lastMove := GameInput{}
 	for {
-		move := <-commandChannel
-		fmt.Println(move)
+		select {
+		case lastMove = <-commandChannel:
+			fmt.Println(lastMove)
+
+		case <-ticker.C:
+			game.Snake.AppendToTail(lastMove.Direction)
+			game.Snake.RemoveEndOfTail()
+		}
 	}
 }

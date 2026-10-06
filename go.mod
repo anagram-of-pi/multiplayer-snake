@@ -5,6 +5,7 @@ go 1.27.1
 require rsc.io/quote v1.5.2
 
 require (
+	charm.land/bubbles/v2 v2.2.1 // indirect
 	charm.land/bubbletea/v2 v2.0.10 // indirect
 	charm.land/lipgloss/v2 v2.0.6 // indirect
 	charm.land/log/v2 v2.0.1 // indirect
