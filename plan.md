@@ -11,4 +11,9 @@
 * every time somebody presses their key
     * send to server
     * server simulates the game
-    * every timestep send it back to clients to display current position
+* every timestep send state back to clients to display current position
+
+* admin panel
+    * request admin password
+    * if correct, open admin panel
+    * change names, kick players, ban players
