@@ -5,10 +5,34 @@ import (
 	"slices"
 )
 
+type PlayerID int
+
+type Action int
+
+const (
+	JoinQueue Action = iota
+	LeaveQueue
+	IsReady
+	ButtonPress
+	ChangeName
+)
+
+// A representation of a player
 type NetworkingPlayer struct {
 	sshID      int // ???
 	PlayerName string
-	PlayerID   int
+	PlayerID   PlayerID
+}
+
+type ClientMessage struct {
+	PlayerID PlayerID
+	Action   Action
+}
+
+type Client struct {
+    ID       PlayerID
+    ToServer chan<- ClientMessage
+    ToClient <-chan ServerMessage
 }
 
 type WaitingRoom struct {
@@ -38,3 +62,5 @@ func NewGame(directions map[*NetworkingPlayer]Direction) ActiveGame {
 		GameState:        NewGameState(GAME_SIZE, GAME_SIZE),
 	}
 }
+
+func M

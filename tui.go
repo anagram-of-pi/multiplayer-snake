@@ -9,6 +9,7 @@ type teaModel struct {
 	PlayerID        int
 	PlayerName      string
 	PlayerDirection Direction
+	Client          Client
 	GameState       GameState
 }
 

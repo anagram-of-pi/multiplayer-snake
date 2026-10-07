@@ -42,6 +42,12 @@ type GameState struct {
 	Height int
 }
 
+type SnakeGame struct {
+	GameState      *GameState
+	commandChannel <-chan GameInput
+	ticker         *time.Ticker
+}
+
 func NewGameState(width, height int) GameState {
 	return GameState{
 		Snake:  &Snake{},
@@ -77,10 +83,11 @@ func (snake Snake) RemoveEndOfTail() {
 	}
 }
 
-func (game GameState) RunGame() {
-	commandChannel := make(chan GameInput, 4)
-	moveDelay := time.Duration(1/game.Speed) * time.Millisecond
-	ticker := time.NewTicker(moveDelay)
+func (game *SnakeGame) RunGame() {
+	ticker := game.ticker
+	commandChannel := game.commandChannel
+	moveDelay := time.Duration(1/game.GameState.Speed) * time.Second
+	ticker.Reset(moveDelay)
 
 	lastMove := GameInput{}
 	for {
@@ -89,8 +96,16 @@ func (game GameState) RunGame() {
 			fmt.Println(lastMove)
 
 		case <-ticker.C:
-			game.Snake.AppendToTail(lastMove.Direction)
-			game.Snake.RemoveEndOfTail()
+			snake := game.GameState.Snake
+			snake.AppendToTail(lastMove.Direction)
+			snake.RemoveEndOfTail()
 		}
 	}
+}
+
+func (game *SnakeGame) ChangeSpeed(newSpeed int) {
+	game.GameState.Speed = newSpeed
+
+	moveDelay := time.Duration(1/game.GameState.Speed) * time.Second
+	game.ticker.Reset(moveDelay)
 }
