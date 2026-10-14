@@ -1,7 +1,7 @@
 package main
 
 import (
-	"maps"
+	"fmt"
 	"slices"
 )
 
@@ -17,7 +17,7 @@ const (
 	ChangeName
 )
 
-// A representation of a player
+// A representation of a player (?)
 type NetworkingPlayer struct {
 	sshID      int // ???
 	PlayerName string
@@ -29,10 +29,14 @@ type ClientMessage struct {
 	Action   Action
 }
 
+type ServerMessage struct {
+	GameState GameState
+}
+
 type Client struct {
-    ID       PlayerID
-    ToServer chan<- ClientMessage
-    ToClient <-chan ServerMessage
+	ID       PlayerID
+	ToServer chan<- ClientMessage
+	ToClient <-chan ServerMessage
 }
 
 type WaitingRoom struct {
@@ -42,25 +46,46 @@ type WaitingRoom struct {
 
 type ActiveGame struct {
 	Players          []*NetworkingPlayer
-	PlayerDirections map[*NetworkingPlayer]Direction
+	PlayerDirections map[PlayerID]Direction
 	GameState        GameState
 }
 
-func (room WaitingRoom) AddPlayer(player *NetworkingPlayer) {
+type GameManager struct {
+	NewClients <-chan Client
+	ToServer   <-chan ClientMessage
+}
+
+func NewGameManager(newClients <-chan Client, toServer <-chan ClientMessage) GameManager {
+	return GameManager{
+		NewClients: newClients,
+		ToServer:   toServer,
+	}
+}
+
+func (room *WaitingRoom) AddPlayer(player *NetworkingPlayer) {
 	room.Players = append(room.Players, player)
 }
-func (room WaitingRoom) RemovePlayer(player *NetworkingPlayer) {
+func (room *WaitingRoom) RemovePlayer(player *NetworkingPlayer) {
 	i := slices.Index(room.Players, player)
 	room.Players = slices.Delete(room.Players, i, i+1)
 }
 
-func NewGame(directions map[*NetworkingPlayer]Direction) ActiveGame {
+func NewGame(directions map[PlayerID]Direction) ActiveGame {
 	GAME_SIZE := 10
 	return ActiveGame{
-		Players:          slices.Collect(maps.Keys(directions)),
+		// Players:          slices.Collect(maps.Keys(directions)),
 		PlayerDirections: directions,
 		GameState:        NewGameState(GAME_SIZE, GAME_SIZE),
 	}
 }
 
-func M
+func (manager *GameManager) RunGameServer() {
+	for {
+		select {
+		case client := <-manager.NewClients:
+			fmt.Printf("New Client: %v", client)
+		case userEvent := <-manager.ToServer:
+			fmt.Printf("New user event: %v", userEvent)
+		}
+	}
+}

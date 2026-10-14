@@ -67,7 +67,8 @@ ssh shows the tui via middleware
 
 ## Game Manager
 * Manages all connections and converts between TUI and snake game
-* Every time a player 
+* Every time a player in the TUI gives an action, the manager sends it where it needs to go.
+* Each client is given a Client
 
 
 

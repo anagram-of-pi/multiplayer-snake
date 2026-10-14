@@ -19,6 +19,20 @@ func P(x, y int) Point {
 	return Point{x, y}
 }
 
+func (dir Direction) AddTo(point Point) Point {
+	switch dir {
+	case Up:
+		point.Y += 1
+	case Right:
+		point.X += 1
+	case Down:
+		point.Y -= 1
+	case Left:
+		point.X -= 1
+	}
+	return point
+}
+
 type Direction int
 
 const (
@@ -64,20 +78,20 @@ func (p Point) String() string {
 func (direction Direction) String() string {
 	return [4]string{"Up", "Right", "Down", "Left"}[direction]
 }
-func (snake Snake) String() string {
+func (snake *Snake) String() string {
 	return fmt.Sprintf("Snake @ %s facing %s", snake.Head.String(), snake.Direction.String())
 }
 
-func (snake Snake) Length() int {
+func (snake *Snake) Length() int {
 	return len(snake.Tail)
 }
-func (snake Snake) SetDirection(dir Direction) {
+func (snake *Snake) SetDirection(dir Direction) {
 	snake.Direction = dir
 }
-func (snake Snake) AppendToTail(dir Direction) {
+func (snake *Snake) AppendToTail(dir Direction) {
 	snake.Tail = append([]Direction{dir}, snake.Tail...)
 }
-func (snake Snake) RemoveEndOfTail() {
+func (snake *Snake) RemoveEndOfTail() {
 	if (len(snake.Tail)) > 0 {
 		snake.Tail = snake.Tail[:len(snake.Tail)-1]
 	}
