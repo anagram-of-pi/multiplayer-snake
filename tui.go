@@ -100,35 +100,45 @@ func (model teaModel) Init() tea.Cmd {
 	return nil
 }
 
+func waitForMessages(channel chan struct{}) tea.Cmd {
+	return func() tea.Msg {
+		return <-channel
+	}
+}
+
 func (model teaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// TODO: Remove temporary gamestate
 	model.GameState.Width = 10
 	model.GameState.Height = 10
 	model.GameState.Snake = &Snake{
 		Tail: []Direction{Up, Up, Left},
 	}
 
-	select {
-	case msg := <-model.Client.ToClient:
-		if (msg.GameState != GameState{}) {
-			model.GameState = msg.GameState
-		}
+	switch msg := msg.(type) {
+	case ServerMessage:
+		select {
+		case msg := <-model.Client.ToClient:
+			if (msg.GameState != GameState{}) {
+				model.GameState = msg.GameState
+			}
 
-	default:
-		switch msg := msg.(type) {
-		case tea.WindowSizeMsg:
-			model.help.SetWidth(msg.Width)
-			model.termHeight = msg.Height
-		case tea.KeyPressMsg:
-			switch {
-			case key.Matches(msg, keys.Quit):
-				toServer := model.Client.ToServer
-				if toServer != nil {
-					toServer <- ClientMessage{
-						model.PlayerID,
-						LeaveQueue,
+		default:
+			switch msg := msg.(type) {
+			case tea.WindowSizeMsg:
+				model.help.SetWidth(msg.Width)
+				model.termHeight = msg.Height
+			case tea.KeyPressMsg:
+				switch {
+				case key.Matches(msg, keys.Quit):
+					toServer := model.Client.ToServer
+					if toServer != nil {
+						toServer <- ClientMessage{
+							model.PlayerID,
+							LeaveQueue,
+						}
 					}
+					return model, tea.Quit
 				}
-				return model, tea.Quit
 			}
 		}
 	}

@@ -13,15 +13,14 @@ import (
 	"syscall"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
 	"charm.land/log/v2"
 	"charm.land/ssh"
 	"charm.land/wish/v2"
 	"charm.land/wish/v2/logging"
 )
 
-const RUN_SERVER = false
+const RUN_SSH_SERVER = false
+const RUN_TUI = true
 
 const (
 	host = "localhost"
@@ -29,6 +28,10 @@ const (
 )
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
 	// TODO: Start goroutine for server
 	// Create a new game manager (struct)
 	//      GM has things like players, ids, etc
@@ -47,10 +50,16 @@ func main() {
 	toServer := make(chan ClientMessage, 8)
 	gameManager := NewGameManager(newClients, toServer)
 
-	go gameManager.RunGameServer()
+	if RUN_TUI {
+		client, _ := NewClient(0, toServer)
 
-	fmt.Println(gameManager) // TODO: Use game manager
-	if RUN_SERVER {
+		// tuiMain(client)
+		newClients <- client
+	}
+
+	go gameManager.RunGameServer(ctx)
+
+	if RUN_SSH_SERVER {
 		s, err := wish.NewServer(
 			wish.WithAddress(net.JoinHostPort(host, port)),
 			wish.WithHostKeyPath(".ssh/id_ed25519"),
@@ -106,66 +115,12 @@ func main() {
 			log.Error("Could not stop server", "error", err)
 		}
 	}
-}
 
-// You can wire any Bubble Tea model up to the middleware with a function that
-// handles the incoming ssh.Session. Here we just grab the terminal info and
-// pass it to the new model. You can also return tea.ProgramOptions (such as
-// tea.WithAltScreen) on a session by session basis.
-func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
-	pty, _, _ := s.Pty()
-	m := model{
-		term:      pty.Term,
-		width:     pty.Window.Width,
-		height:    pty.Window.Height,
-		txtStyle:  lipgloss.NewStyle().Foreground(lipgloss.Color("10")),
-		quitStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("8")),
-		bg:        "light",
-	}
-	return m, []tea.ProgramOption{}
-}
+	sig := <-sigChan
+	fmt.Printf("\nReceived signal (%v)\n", sig)
 
-// Just a generic tea.Model to demo terminal information of ssh.
-type model struct {
-	term      string
-	profile   string
-	width     int
-	height    int
-	bg        string
-	txtStyle  lipgloss.Style
-	quitStyle lipgloss.Style
-}
+	cancel()
+	time.Sleep(500 * time.Millisecond)
 
-func (m model) Init() tea.Cmd {
-	// default values
-	return tea.Batch(
-		tea.RequestBackgroundColor,
-	)
-}
-
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.ColorProfileMsg:
-		m.profile = msg.String()
-	case tea.BackgroundColorMsg:
-		if msg.IsDark() {
-			m.bg = "dark"
-		}
-	case tea.WindowSizeMsg:
-		m.height = msg.Height
-		m.width = msg.Width
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "q", "ctrl+c":
-			return m, tea.Quit
-		}
-	}
-	return m, nil
-}
-
-func (m model) View() tea.View {
-	s := fmt.Sprintf("Your term is %s\nYour window size is %dx%d\nBackground: %s\nColor Profile: %s", m.term, m.width, m.height, m.bg, m.profile)
-	v := tea.NewView(m.txtStyle.Render(s) + "\n\n" + m.quitStyle.Render("Press 'q' to quit\n"))
-	v.AltScreen = true
-	return v
+	fmt.Println("\nDone")
 }

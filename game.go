@@ -14,7 +14,7 @@ type Point struct {
 	Y int
 }
 
-// func NewPoint(x, y int) Point {...}
+// NewPoint(x, y int) -> Point
 func P(x, y int) Point {
 	return Point{x, y}
 }

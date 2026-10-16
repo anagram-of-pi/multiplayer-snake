@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"slices"
 )
@@ -62,6 +63,18 @@ func NewGameManager(newClients <-chan Client, toServer <-chan ClientMessage) Gam
 	}
 }
 
+func NewClient(id PlayerID, toServer chan<- ClientMessage) (Client, chan ServerMessage) {
+	toClient := make(chan ServerMessage, 8)
+	return Client{
+		ID:       id,
+		ToServer: toServer,
+		ToClient: toClient,
+	}, toClient
+}
+func (client *Client) String() string {
+	return fmt.Sprintf("[Client ID #%v]", client.ID)
+}
+
 func (room *WaitingRoom) AddPlayer(player *NetworkingPlayer) {
 	room.Players = append(room.Players, player)
 }
@@ -79,13 +92,17 @@ func NewGame(directions map[PlayerID]Direction) ActiveGame {
 	}
 }
 
-func (manager *GameManager) RunGameServer() {
+func (manager *GameManager) RunGameServer(ctx context.Context) {
+	fmt.Println("Started running Game Server")
 	for {
 		select {
 		case client := <-manager.NewClients:
-			fmt.Printf("New Client: %v", client)
+			fmt.Printf("New Client: %s\n", client.String())
 		case userEvent := <-manager.ToServer:
-			fmt.Printf("New user event: %v", userEvent)
+			fmt.Printf("New user event: %v\n", userEvent)
+		case <-ctx.Done():
+			fmt.Println("Stopped running Game Server")
+			return
 		}
 	}
 }
