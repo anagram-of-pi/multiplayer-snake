@@ -99,6 +99,7 @@ func (manager *GameManager) RunGameServer(ctx context.Context) {
 		case client := <-manager.NewClients:
 			fmt.Printf("New Client: %s\n", client.String())
 		case userEvent := <-manager.ToServer:
+
 			fmt.Printf("New user event: %v\n", userEvent)
 		case <-ctx.Done():
 			fmt.Println("Stopped running Game Server")

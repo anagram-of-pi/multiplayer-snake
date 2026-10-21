@@ -50,12 +50,14 @@ func main() {
 	toServer := make(chan ClientMessage, 8)
 	gameManager := NewGameManager(newClients, toServer)
 
-	if RUN_TUI {
-		client, _ := NewClient(0, toServer)
+	go func() {
+		if RUN_TUI {
+			client, _ := NewClient(0, toServer)
 
-		// tuiMain(client)
-		newClients <- client
-	}
+			// tuiMain(client)
+			newClients <- client
+		}
+	}()
 
 	go gameManager.RunGameServer(ctx)
 

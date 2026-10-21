@@ -97,10 +97,11 @@ func initialModel(client Client) teaModel {
 }
 
 func (model teaModel) Init() tea.Cmd {
+	tea.Batch(waitForMessage(model.Client.ToClient))
 	return nil
 }
 
-func waitForMessages(channel chan struct{}) tea.Cmd {
+func waitForMessage(channel <-chan ServerMessage) tea.Cmd {
 	return func() tea.Msg {
 		return <-channel
 	}
@@ -116,6 +117,7 @@ func (model teaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case ServerMessage:
+		fmt.Println(msg)
 		select {
 		case msg := <-model.Client.ToClient:
 			if (msg.GameState != GameState{}) {
@@ -123,23 +125,23 @@ func (model teaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		default:
-			switch msg := msg.(type) {
-			case tea.WindowSizeMsg:
-				model.help.SetWidth(msg.Width)
-				model.termHeight = msg.Height
-			case tea.KeyPressMsg:
-				switch {
-				case key.Matches(msg, keys.Quit):
-					toServer := model.Client.ToServer
-					if toServer != nil {
-						toServer <- ClientMessage{
-							model.PlayerID,
-							LeaveQueue,
-						}
-					}
-					return model, tea.Quit
-				}
-			}
+			// switch msg := msg.(type) {
+			// case tea.WindowSizeMsg:
+			// 	model.help.SetWidth(msg.Width)
+			// 	model.termHeight = msg.Height
+			// case tea.KeyPressMsg:
+			// 	switch {
+			// 	case key.Matches(msg, keys.Quit):
+			// 		toServer := model.Client.ToServer
+			// 		if toServer != nil {
+			// 			toServer <- ClientMessage{
+			// 				model.PlayerID,
+			// 				LeaveQueue,
+			// 			}
+			// 		}
+			// 		return model, tea.Quit
+			// 	}
+			// }
 		}
 	}
 
